@@ -24,7 +24,7 @@ Items are sequentially numbered and never renumbered. Add new items at the botto
 ### #003 — Fuzzy duplicate candidate detection
 **Type:** Enhancement
 **Status:** Done
-**Description:** Added `rapidfuzz.token_sort_ratio` pass at the end of `load_db.py` to populate `duplicate_candidates`. Compares names within the same `age_group` and `program` across different seasons only (same-season multi-division appearances are intentional dual-roster). Threshold: 88.
+**Description:** Added `rapidfuzz.token_sort_ratio` pass at the end of `load_db.py` to populate `duplicate_candidates`. Compares names within the same `age_group` and `program` across different seasons only (same-season multi-division appearances are intentional dual-roster). Threshold: 91. Age-constraint impossibility filter (`is_impossible_candidate()`) prevents generation of pairs that are impossible given youth hockey age rules.
 
 ---
 
@@ -51,8 +51,8 @@ Items are sequentially numbered and never renumbered. Add new items at the botto
 
 ### #007 — Web interface
 **Type:** Feature
-**Status:** Open
-**Description:** Build a web UI covering three areas: (1) analytic query explorer for interesting cross-season and cross-division queries; (2) duplicate reconciliation workflow — review `duplicate_candidates`, confirm or dismiss, and link confirmed matches to a `people` record; (3) insight dashboards (e.g., player progression over seasons, top scorers by division).
+**Status:** In Progress
+**Description:** Flask + HTMX + Pico.css web UI served on `0.0.0.0:5000` via systemd (`norcal-stats.service`). Phase 1 (reconciliation queue) complete: review pending `duplicate_candidates` side-by-side, confirm same person (creates/links `people` record) or dismiss. Score-100 pairs auto-confirmed; score < 91 auto-dismissed; score 91–99 surface for human review. Remaining phases: (2) analytic query explorer; (3) insight dashboards.
 
 ---
 
