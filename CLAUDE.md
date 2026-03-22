@@ -98,7 +98,7 @@ Items are sequentially numbered (`#001`, `#002`, ...) and never renumbered or re
 
 ## Development Workflow
 
-After completing any feature or fix:
+After completing any feature or fix — and **at the end of every working session** — always:
 
 1. **Run the test suite** — must be green before committing.
    ```bash
@@ -106,5 +106,6 @@ After completing any feature or fix:
    ```
 2. **Commit** with a descriptive message referencing the BACKLOG item if applicable.
 3. **Push** to `origin/main`.
+4. **Verify** with `git status` — working tree must be clean and branch up to date with origin.
 
 For enhancements, follow TDD order: write failing tests first, implement, re-run until green, then commit and push.
