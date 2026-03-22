@@ -71,3 +71,16 @@ Same player appearing in **multiple divisions within the same season** is expect
 ## BACKLOG.md Convention
 
 Items are sequentially numbered (`#001`, `#002`, ...) and never renumbered or reused. Always append new items at the bottom with the next available number. See BACKLOG.md for format.
+
+## Development Workflow
+
+After completing any feature or fix:
+
+1. **Run the test suite** — must be green before committing.
+   ```bash
+   .venv/bin/pytest tests/ -v
+   ```
+2. **Commit** with a descriptive message referencing the BACKLOG item if applicable.
+3. **Push** to `origin/main`.
+
+For enhancements, follow TDD order: write failing tests first, implement, re-run until green, then commit and push.
