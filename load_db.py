@@ -314,23 +314,93 @@ def load_goalie_stats(
 
 
 # ---------------------------------------------------------------------------
+# Age-constraint impossibility check
+# ---------------------------------------------------------------------------
+def is_impossible_candidate(
+    type_a: str, age_group_a: str | None, end_year_a: int,
+    type_b: str, age_group_b: str | None, end_year_b: int,
+) -> bool:
+    """Return True if two records cannot possibly belong to the same person.
+
+    Rules:
+      1. Same age group, gap >= threshold: a player ages out after at most
+         2-3 seasons in the same age group. Threshold = 2 for cross-type
+         pairs (player↔goalie is less likely) and 3 for same-type.
+      2. Age group regression: a player can't appear in a lower age group
+         in a later season (you can't go back down once you've aged up).
+      3. Cross-age-group time mismatch: only applied when both groups are
+         below 14U. Skipped for 14U+ because those players can play up to
+         16U/18U in the same or following season.
+
+    HS divisions use a higher threshold of 5 (4-year school career).
+    Mixed HS/numeric pairs are conservative — never auto-dismissed.
+    Unknown age group formats are conservative — never auto-dismissed.
+    """
+    # Normalize so A is the earlier (or equal) season
+    if end_year_a > end_year_b:
+        type_a, age_group_a, end_year_a, type_b, age_group_b, end_year_b = (
+            type_b, age_group_b, end_year_b, type_a, age_group_a, end_year_a
+        )
+    year_diff = end_year_b - end_year_a  # always >= 0
+    cross_type = type_a != type_b
+
+    # HS same-group: 4-year school career → gap >= 5 is impossible
+    if age_group_a == "HS" and age_group_b == "HS":
+        return year_diff >= 5
+    # Mixed HS/numeric: conservative — don't auto-dismiss
+    if age_group_a == "HS" or age_group_b == "HS":
+        return False
+
+    # Extract numeric age (e.g. "12U" → 12); unknown format → conservative
+    try:
+        a = int(age_group_a.rstrip("U"))
+        b = int(age_group_b.rstrip("U"))
+    except (ValueError, AttributeError):
+        return False
+
+    # Rule 1: same age group — gap >= threshold is impossible
+    # Cross-type pairs use a tighter threshold (player↔goalie switching is uncommon)
+    if a == b:
+        threshold = 2 if cross_type else 3
+        return year_diff >= threshold
+
+    # Rule 2: age group regression in a later season is impossible
+    # (only across different seasons; same-season cross-group is conservative)
+    if year_diff > 0 and b < a:
+        return True
+
+    # Rule 3: cross-age-group time mismatch
+    # Skipped if either group is >= 14U (14U+ players can play up to 16U/18U)
+    if a < 14 and b < 14:
+        expected = b - a  # calendar years to naturally age from group a to group b
+        return year_diff < expected - 2 or year_diff > expected + 2
+
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Fuzzy duplicate detection
 # ---------------------------------------------------------------------------
 def build_group_dict(conn: sqlite3.Connection, table: str) -> dict[tuple, list[tuple]]:
     """
-    Return {(age_group, program): [(id, raw_name, season_id), ...]}
+    Return {(age_group, program): [(id, raw_name, season_id, end_year), ...]}
     for the given stats table (player_stats or goalie_stats).
+    end_year comes from the seasons table and is used for age-constraint checks.
     """
     query = f"""
         SELECT s.id, s.raw_name, s.season_id,
-               d.age_group, d.program
+               d.age_group, d.program,
+               seas.end_year
         FROM {table} s
         JOIN divisions d ON s.division_id = d.id
+        JOIN seasons seas ON s.season_id = seas.id
     """
     groups: dict[tuple, list[tuple]] = {}
     for row in conn.execute(query):
         key = (row["age_group"], row["program"])
-        groups.setdefault(key, []).append((row["id"], row["raw_name"], row["season_id"]))
+        groups.setdefault(key, []).append(
+            (row["id"], row["raw_name"], row["season_id"], row["end_year"])
+        )
     return groups
 
 
@@ -370,13 +440,20 @@ def run_fuzzy_within(
     """Compare records within the same (age_group, program) group, different seasons."""
     count = 0
     for key, records in groups.items():
+        age_group, _program = key
         n = len(records)
         for i in range(n):
-            id_a, name_a, season_a = records[i]
+            id_a, name_a, season_a, end_year_a = records[i]
             for j in range(i + 1, n):
-                id_b, name_b, season_b = records[j]
+                id_b, name_b, season_b, end_year_b = records[j]
                 # Skip same-season comparisons
                 if season_a == season_b:
+                    continue
+                # Skip age-constraint-impossible pairs
+                if is_impossible_candidate(
+                    src_type, age_group, end_year_a,
+                    src_type, age_group, end_year_b,
+                ):
                     continue
                 score = fuzz.token_sort_ratio(name_a, name_b)
                 if score >= SIMILARITY_THRESHOLD:
@@ -395,13 +472,20 @@ def run_fuzzy_cross(
     count = 0
     all_keys = set(player_groups.keys()) | set(goalie_groups.keys())
     for key in all_keys:
+        age_group, _program = key
         p_records = player_groups.get(key, [])
         g_records = goalie_groups.get(key, [])
         if not p_records or not g_records:
             continue
-        for pid, pname, pseason in p_records:
-            for gid, gname, gseason in g_records:
+        for pid, pname, _pseason, pend_year in p_records:
+            for gid, gname, _gseason, gend_year in g_records:
                 # Allow same-season cross comparison (player and goalie can be same person)
+                # Skip age-constraint-impossible pairs
+                if is_impossible_candidate(
+                    "player", age_group, pend_year,
+                    "goalie", age_group, gend_year,
+                ):
+                    continue
                 score = fuzz.token_sort_ratio(pname, gname)
                 if score >= SIMILARITY_THRESHOLD:
                     insert_duplicate(conn, "player", pid, "goalie", gid, score)
