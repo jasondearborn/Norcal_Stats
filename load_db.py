@@ -15,7 +15,7 @@ from rapidfuzz import fuzz
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-SIMILARITY_THRESHOLD = 88
+SIMILARITY_THRESHOLD = 91
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "norcal_stats.db"
 SCHEMA_PATH = BASE_DIR / "schema.sql"
