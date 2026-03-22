@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Reconciliation Queue — Norcal Stats{% endblock %}
+
+{% block content %}
+<h1>Reconciliation Queue</h1>
+<p class="progress-note">
+  <strong>{{ pending }}</strong> pending &nbsp;/&nbsp; {{ total }} total
+</p>
+
+{% if rows %}
+<table>
+  <thead>
+    <tr>
+      <th>Score</th>
+      <th>Name A</th>
+      <th>Season / Team A</th>
+      <th>Name B</th>
+      <th>Season / Team B</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="queue-body">
+    {% for row in rows %}
+    <tr id="row-{{ row.id }}">
+      <td>
+        <span class="
+          {% if row.similarity_score >= 95 %}similarity-high
+          {% elif row.similarity_score >= 90 %}similarity-mid
+          {% else %}similarity-low{% endif %}
+        ">{{ "%.1f"|format(row.similarity_score) }}</span>
+      </td>
+      <td>{{ row.name_a }} <span class="badge">{{ row.source_a_type }}</span></td>
+      <td>{{ row.season_a }}<br><small>{{ row.team_a }}</small></td>
+      <td>{{ row.name_b }} <span class="badge">{{ row.source_b_type }}</span></td>
+      <td>{{ row.season_b }}<br><small>{{ row.team_b }}</small></td>
+      <td style="white-space:nowrap">
+        <a href="{{ url_for('review', candidate_id=row.id) }}" role="button" style="margin-right:0.5rem">Review</a>
+        <button
+          hx-post="{{ url_for('dismiss', candidate_id=row.id) }}"
+          hx-target="#row-{{ row.id }}"
+          hx-swap="outerHTML"
+          class="secondary outline"
+          style="margin:0"
+        >Dismiss</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>All caught up — no pending candidates.</p>
+{% endif %}
+{% endblock %}

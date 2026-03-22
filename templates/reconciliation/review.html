@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Review #{{ candidate.id }} — Norcal Stats{% endblock %}
+
+{% block content %}
+<h1>Review Candidate #{{ candidate.id }}</h1>
+<p class="progress-note">
+  Similarity score:
+  <strong class="
+    {% if candidate.similarity_score >= 95 %}similarity-high
+    {% elif candidate.similarity_score >= 90 %}similarity-mid
+    {% else %}similarity-low{% endif %}
+  ">{{ "%.1f"|format(candidate.similarity_score) }}</strong>
+  &nbsp;&mdash;&nbsp; <a href="{{ url_for('queue') }}">&larr; Back to queue</a>
+</p>
+
+<div class="stat-grid">
+  {# ---- Side A ---- #}
+  <div class="stat-card">
+    <h3>{{ row_a.raw_name if row_a else "—" }} <span class="badge">{{ candidate.source_a_type }}</span></h3>
+    {% if row_a %}
+    <table>
+      <tr><th>Season</th><td>{{ row_a.season_name }}</td></tr>
+      <tr><th>Division</th><td>{{ row_a.division_name }}</td></tr>
+      <tr><th>Team</th><td>{{ row_a.team_name }}</td></tr>
+      {% if candidate.source_a_type == 'player' %}
+      <tr><th>Jersey #</th><td>{{ row_a.jersey_number or "—" }}</td></tr>
+      <tr><th>GP</th><td>{{ row_a.games_played }}</td></tr>
+      <tr><th>G</th><td>{{ row_a.goals }}</td></tr>
+      <tr><th>A</th><td>{{ row_a.assists }}</td></tr>
+      <tr><th>Pts</th><td>{{ row_a.points }}</td></tr>
+      <tr><th>Pts/GP</th><td>{{ row_a.points_per_game }}</td></tr>
+      <tr><th>PIM</th><td>{{ row_a.penalty_minutes }}</td></tr>
+      <tr><th>Hat tricks</th><td>{{ row_a.hat_tricks }}</td></tr>
+      {% else %}
+      <tr><th>GP</th><td>{{ row_a.games_played }}</td></tr>
+      <tr><th>SA</th><td>{{ row_a.shots_against }}</td></tr>
+      <tr><th>GA</th><td>{{ row_a.goals_against }}</td></tr>
+      <tr><th>GAA</th><td>{{ row_a.goals_against_avg }}</td></tr>
+      <tr><th>SV%</th><td>{{ row_a.save_percentage }}</td></tr>
+      <tr><th>SO</th><td>{{ row_a.shutouts }}</td></tr>
+      {% endif %}
+      {% if row_a.person_id %}
+      <tr><th>Person ID</th><td>{{ row_a.person_id }}</td></tr>
+      {% endif %}
+    </table>
+    {% else %}
+    <p>Record not found.</p>
+    {% endif %}
+  </div>
+
+  {# ---- Side B ---- #}
+  <div class="stat-card">
+    <h3>{{ row_b.raw_name if row_b else "—" }} <span class="badge">{{ candidate.source_b_type }}</span></h3>
+    {% if row_b %}
+    <table>
+      <tr><th>Season</th><td>{{ row_b.season_name }}</td></tr>
+      <tr><th>Division</th><td>{{ row_b.division_name }}</td></tr>
+      <tr><th>Team</th><td>{{ row_b.team_name }}</td></tr>
+      {% if candidate.source_b_type == 'player' %}
+      <tr><th>Jersey #</th><td>{{ row_b.jersey_number or "—" }}</td></tr>
+      <tr><th>GP</th><td>{{ row_b.games_played }}</td></tr>
+      <tr><th>G</th><td>{{ row_b.goals }}</td></tr>
+      <tr><th>A</th><td>{{ row_b.assists }}</td></tr>
+      <tr><th>Pts</th><td>{{ row_b.points }}</td></tr>
+      <tr><th>Pts/GP</th><td>{{ row_b.points_per_game }}</td></tr>
+      <tr><th>PIM</th><td>{{ row_b.penalty_minutes }}</td></tr>
+      <tr><th>Hat tricks</th><td>{{ row_b.hat_tricks }}</td></tr>
+      {% else %}
+      <tr><th>GP</th><td>{{ row_b.games_played }}</td></tr>
+      <tr><th>SA</th><td>{{ row_b.shots_against }}</td></tr>
+      <tr><th>GA</th><td>{{ row_b.goals_against }}</td></tr>
+      <tr><th>GAA</th><td>{{ row_b.goals_against_avg }}</td></tr>
+      <tr><th>SV%</th><td>{{ row_b.save_percentage }}</td></tr>
+      <tr><th>SO</th><td>{{ row_b.shutouts }}</td></tr>
+      {% endif %}
+      {% if row_b.person_id %}
+      <tr><th>Person ID</th><td>{{ row_b.person_id }}</td></tr>
+      {% endif %}
+    </table>
+    {% else %}
+    <p>Record not found.</p>
+    {% endif %}
+  </div>
+</div>
+
+<hr>
+
+<div style="display:flex; gap:2rem; align-items:flex-end; flex-wrap:wrap">
+  <form method="POST" action="{{ url_for('confirm', candidate_id=candidate.id) }}" style="flex:1; min-width:280px">
+    <label for="canonical_name">
+      <strong>Confirm: same person</strong><br>
+      Canonical name
+    </label>
+    <input
+      type="text"
+      id="canonical_name"
+      name="canonical_name"
+      value="{{ pre_filled }}"
+      required
+      style="margin-bottom:0.5rem"
+    >
+    <button type="submit">Confirm same person</button>
+  </form>
+
+  <form method="POST" action="{{ url_for('dismiss', candidate_id=candidate.id) }}" style="align-self:flex-end">
+    <button type="submit" class="secondary outline">Dismiss — different people</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Norcal Stats{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <style>
+    .similarity-high { color: var(--pico-color-green-500); font-weight: bold; }
+    .similarity-mid  { color: var(--pico-color-orange-500); }
+    .similarity-low  { color: var(--pico-color-red-500); }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .stat-card { padding: 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+    .stat-card h3 { margin-bottom: 0.5rem; }
+    .badge { display: inline-block; padding: 0.2em 0.6em; border-radius: 4px; font-size: 0.8em; background: var(--pico-muted-background-color); }
+    nav a { margin-right: 1rem; }
+    .progress-note { color: var(--pico-muted-color); font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <a href="/" style="font-weight:bold">Norcal Stats</a>
+      <a href="/reconciliation">Reconciliation</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
